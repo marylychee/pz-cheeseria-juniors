@@ -3,6 +3,7 @@ import { useQuery } from 'react-query';
 // Components
 import Item from './Cart/Item/Item';
 import Cart from './Cart/Cart';
+import Modal from './Modal/Modal';
 import Drawer from '@material-ui/core/Drawer';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import Grid from '@material-ui/core/Grid';
@@ -23,13 +24,14 @@ export type CartItemType = {
   amount: number;
 };
 
-
 const getCheeses = async (): Promise<CartItemType[]> =>
   await (await fetch(`api/cheeses`)).json();
 
 const App = () => {
   const [cartOpen, setCartOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [cartItems, setCartItems] = useState([] as CartItemType[]);
+  const [dialogItem, setDialogItem] = useState({} as CartItemType);
   const { data, isLoading, error } = useQuery<CartItemType[]>(
     'cheeses',
     getCheeses
@@ -68,6 +70,13 @@ const App = () => {
       }, [] as CartItemType[])
     );
   };
+
+  const handleDialogOpen = (clickedItem: CartItemType) => {
+    setDialogOpen(true);
+    setDialogItem(clickedItem);
+  };
+
+  const handleDialogClose = () => setDialogOpen(false);
 
   if (isLoading) return <LinearProgress />;
   if (error) return <div>Something went wrong ...</div>;
@@ -122,10 +131,17 @@ const App = () => {
       <Grid container spacing={3}>
         {data?.map(item => (
           <Grid item key={item.id} xs={12} sm={4}>
-            <Item item={item} handleAddToCart={handleAddToCart} />
+            <Item item={item} handleAddToCart={handleAddToCart} handleDialogOpen={handleDialogOpen}/>
           </Grid>
         ))}
       </Grid>
+
+      <Modal
+        dialogOpen={dialogOpen}
+        handleDialogClose={handleDialogClose}
+        dialogItem={dialogItem}
+      />
+
     </Wrapper>
 
   );
