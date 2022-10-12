@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
+import axios from 'axios'
 // Components
 import Item from './Cart/Item/Item';
 import Cart from './Cart/Cart';
@@ -30,6 +31,7 @@ const getCheeses = async (): Promise<CartItemType[]> =>
 const App = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [purchaseSuccessful, setPurchaseful] = useState(false);
   const [cartItems, setCartItems] = useState([] as CartItemType[]);
   const [dialogItem, setDialogItem] = useState({} as CartItemType);
   const { data, isLoading, error } = useQuery<CartItemType[]>(
@@ -71,6 +73,8 @@ const App = () => {
     );
   };
 
+  const clearCart = () => setCartItems([]);
+
   const handleDialogOpen = (clickedItem: CartItemType) => {
     setDialogOpen(true);
     setDialogItem(clickedItem);
@@ -78,8 +82,52 @@ const App = () => {
 
   const handleDialogClose = () => setDialogOpen(false);
 
+  const handlePurchase = () => {
+
+      let purchaseItems = cartItems.map(({id, title, price, description, category, image, amount}) => {
+          return {
+            id, title, price, amount
+          }
+      });
+
+      const calculateTotal = (cartItems: CartItemType[]) =>
+        cartItems.reduce((ack: number, item: CartItemType) => ack + item.amount * item.price, 0);
+      let total =  Math.round(calculateTotal(cartItems) * 1e2 ) / 1e2;
+
+      const data = {
+        purchaseItems,
+        total,
+      };
+
+      try {
+        fetch(`api/purchases`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          mode: 'cors',
+          body: JSON.stringify(data)
+        })
+        .then(response => {
+          console.log(response.statusText)
+          clearCart();
+          setPurchaseful(true);
+        })
+
+      } catch (error) {
+        console.error(error);
+      }
+  }
+
+  const setCartFalse = () => {
+    setCartOpen(false)
+    setPurchaseful(false)
+  }
+
   if (isLoading) return <LinearProgress />;
   if (error) return <div>Something went wrong ...</div>;
+
 
   return (
 
@@ -120,11 +168,13 @@ const App = () => {
         </Toolbar>
       </StyledAppBar>
 
-      <Drawer anchor='right' open={cartOpen} onClose={() => setCartOpen(false)}>
+      <Drawer anchor='right' open={cartOpen} onClose={() => setCartFalse()}>
         <Cart
           cartItems={cartItems}
           addToCart={handleAddToCart}
           removeFromCart={handleRemoveFromCart}
+          handlePurchase={handlePurchase}
+          purchaseSuccessful={purchaseSuccessful}
         />
       </Drawer>
 

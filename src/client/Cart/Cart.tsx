@@ -8,9 +8,10 @@ type Props = {
   addToCart: (clickedItem: CartItemType) => void;
   removeFromCart: (id: number) => void;
   handlePurchase: () => void;
+  purchaseSuccessful: boolean;
 };
 
-const Cart: React.FC<Props> = ({ cartItems, addToCart, removeFromCart, handlePurchase }) => {
+const Cart: React.FC<Props> = ({ cartItems, addToCart, removeFromCart, handlePurchase, purchaseSuccessful }) => {
   const calculateTotal = (items: CartItemType[]) =>
     items.reduce((ack: number, item) => ack + item.amount * item.price, 0);
 
@@ -27,7 +28,11 @@ const Cart: React.FC<Props> = ({ cartItems, addToCart, removeFromCart, handlePur
         />
       ))}
       <h2>Total: ${calculateTotal(cartItems).toFixed(2)}</h2>
+
+      {purchaseSuccessful ? <p>Purchase Successful!! </p> : null }
+
       {cartItems.length === 0 ? null : <Button onClick={() => handlePurchase()} variant="contained">Purchase</Button>}
+
     </Wrapper>
   );
 };
