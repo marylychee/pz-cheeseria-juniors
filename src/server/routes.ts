@@ -2,6 +2,7 @@ import * as express from 'express';
 import { RequestHandler } from 'express';
 const fs = require('fs');
 const cheeses = require('./data/cheeses.json');
+const purchases = require('./data/purchases.json')
 
 const router = express.Router();
 router.use(express.json() as RequestHandler);
@@ -17,15 +18,9 @@ router.post('/api/purchases', (req, res, next) => {
   try {
       let rawdata = fs.readFileSync('src/server/data/purchases.json');
       let purchases = JSON.parse(rawdata);
-      console.log('purchases are', purchases);
-
       let newPayment = { id: purchases.length + 1, ...req.body}
 
-      console.log('newPayment', newPayment)
-
       purchases.push(newPayment);
-
-      console.log(purchases)
 
       fs.writeFileSync('src/server/data/purchases.json', JSON.stringify(purchases, null, 4));
 
@@ -34,6 +29,10 @@ router.post('/api/purchases', (req, res, next) => {
       console.log('there is a server error', err)
       res.status(500).send({ error: 'failed to process purchase' })
     }
+});
+
+router.get('/api/purchases', (req, res, next) => {
+      res.json(purchases)
 });
 
 

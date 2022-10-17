@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
-import axios from 'axios'
 // Components
 import Item from './Cart/Item/Item';
 import Cart from './Cart/Cart';
 import Modal from './Modal/Modal';
+import Purchases from './Purchases/Purchases';
 import Drawer from '@material-ui/core/Drawer';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import Grid from '@material-ui/core/Grid';
@@ -25,12 +25,29 @@ export type CartItemType = {
   amount: number;
 };
 
+export type PurchaseItemType = {
+  id: number;
+  title: string;
+  price: number;
+  amount: number;
+}
+
+export type PurchaseType = {
+  id: number;
+  purchaseItems: Array <PurchaseItemType>;
+  total: number;
+}
+
 const getCheeses = async (): Promise<CartItemType[]> =>
   await (await fetch(`api/cheeses`)).json();
+
+const getPurchases = async (): Promise<PurchaseType[]> =>
+ await (await fetch(`api/purchases`)).json();
 
 const App = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [recentPurchasesOpen, setRecentPurchasesOpen] = useState(false);
   const [purchaseSuccessful, setPurchaseful] = useState(false);
   const [cartItems, setCartItems] = useState([] as CartItemType[]);
   const [dialogItem, setDialogItem] = useState({} as CartItemType);
@@ -38,7 +55,11 @@ const App = () => {
     'cheeses',
     getCheeses
   );
+  const { data: recentPurchases, status, refetch: refetchPurchases } = useQuery<PurchaseType[]>(
+    'purchases',
+    getPurchases);
   console.log(data);
+  console.log(recentPurchases)
 
   const getTotalItems = (items: CartItemType[]) =>
     items.reduce((ack: number, item) => ack + item.amount, 0);
@@ -84,7 +105,7 @@ const App = () => {
 
   const handlePurchase = () => {
 
-      let purchaseItems = cartItems.map(({id, title, price, description, category, image, amount}) => {
+      const purchaseItems = cartItems.map(({id, title, price, description, category, image, amount}) => {
           return {
             id, title, price, amount
           }
@@ -92,7 +113,7 @@ const App = () => {
 
       const calculateTotal = (cartItems: CartItemType[]) =>
         cartItems.reduce((ack: number, item: CartItemType) => ack + item.amount * item.price, 0);
-      let total =  Math.round(calculateTotal(cartItems) * 1e2 ) / 1e2;
+      const total =  Math.round(calculateTotal(cartItems) * 1e2 ) / 1e2;
 
       const data = {
         purchaseItems,
@@ -113,6 +134,7 @@ const App = () => {
           console.log(response.statusText)
           clearCart();
           setPurchaseful(true);
+          refetchPurchases();
         })
 
       } catch (error) {
@@ -125,9 +147,13 @@ const App = () => {
     setPurchaseful(false)
   }
 
+  const onRecentPurchaseOpen = () => {
+    setRecentPurchasesOpen(true)
+    refetchPurchases();
+  }
+
   if (isLoading) return <LinearProgress />;
   if (error) return <div>Something went wrong ...</div>;
-
 
   return (
 
@@ -140,7 +166,7 @@ const App = () => {
             justify="space-between"
             alignItems="center"
           >
-            <StyledButton>
+            <StyledButton onClick={() => onRecentPurchaseOpen()}>
               <RestoreIcon />
               <Typography variant="subtitle2">
                 Recent Purchases
@@ -191,6 +217,12 @@ const App = () => {
         handleDialogClose={handleDialogClose}
         dialogItem={dialogItem}
       />
+
+      <Drawer anchor='left' open={recentPurchasesOpen} onClose={() => setRecentPurchasesOpen(false)}>
+        <Purchases
+          recentPurchases={recentPurchases} status={status}
+        />
+      </Drawer>
 
     </Wrapper>
 
